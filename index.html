@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Environmental Quiz Generator</title>
+    <title>Adaptive Environmental Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -17,212 +15,217 @@
             background-color: #064e3b; /* Slightly lighter green */
             border: 1px solid #047857;
         }
-        .option-btn {
-            background-color: #047857;
+        .btn {
             transition: all 0.2s ease-in-out;
         }
-        .option-btn:hover:not(:disabled) {
+        .btn-primary {
+            background-color: #10b981;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #34d399;
+        }
+        .btn-option {
+            background-color: #047857;
+        }
+        .btn-option:hover:not(:disabled) {
             background-color: #059669;
             transform: translateY(-2px);
         }
-        .option-btn.correct {
-            background-color: #16a34a; /* Green for correct */
-            border-color: #22c55e;
-        }
-        .option-btn.incorrect {
-            background-color: #dc2626; /* Red for incorrect */
-            border-color: #ef4444;
-        }
-        .option-btn:disabled {
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        .action-button {
-            background-color: #10b981;
-            transition: background-color 0.2s;
-        }
-        .action-button:hover:not(:disabled) {
-            background-color: #34d399;
-        }
-        .action-button:disabled {
-            background-color: #047857;
-            cursor: wait;
-        }
-        .difficulty-selector select {
-            background-color: #065f46;
-            border-color: #047857;
-        }
+        .btn-option.correct { background-color: #16a34a; border-color: #22c55e; }
+        .btn-option.incorrect { background-color: #dc2626; border-color: #ef4444; }
+        .btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        #progress-bar { transition: width 0.5s ease-in-out; }
     </style>
 </head>
 <body class="text-green-100 flex items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-2xl mx-auto">
         <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-emerald-300">Environmental Quiz</h1>
-            <p class="text-lg text-emerald-200 mt-2">Test your knowledge on environmental education!</p>
+            <h1 class="text-4xl md:text-5xl font-bold text-emerald-300">Adaptive Quiz</h1>
+            <p class="text-lg text-emerald-200 mt-2">The difficulty changes based on your score!</p>
         </header>
 
         <main id="quiz-container" class="quiz-card rounded-2xl shadow-2xl p-6 md:p-8">
-            <!-- Difficulty Selector -->
-            <div id="difficulty-selector" class="mb-6 difficulty-selector">
-                <label for="difficulty" class="block mb-2 font-semibold text-emerald-100">Select Difficulty Level:</label>
-                <select id="difficulty" class="w-full p-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                    <option value="school" selected>School</option>
-                    <option value="college">College</option>
-                </select>
-            </div>
             
-            <!-- Quiz content will be injected here -->
-            <div id="quiz-content" class="hidden">
-                <h2 id="question" class="text-2xl font-semibold mb-6 text-white"></h2>
+            <!-- Start Screen -->
+            <div id="start-screen">
+                <div class="text-center">
+                    <p class="text-xl mb-6 text-emerald-200">Ready to test your environmental knowledge?</p>
+                    <button id="start-btn" class="btn btn-primary text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105">Start Quiz</button>
+                </div>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="hidden">
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                         <span class="text-sm font-semibold text-emerald-200">Progress</span>
+                         <span id="progress-text" class="text-sm font-semibold text-emerald-200">Question 1 / 5</span>
+                    </div>
+                    <div class="w-full bg-green-900 rounded-full h-2.5">
+                        <div id="progress-bar" class="bg-emerald-400 h-2.5 rounded-full" style="width: 20%"></div>
+                    </div>
+                </div>
+                
+                <h2 id="question" class="text-2xl font-semibold my-6 text-white"></h2>
                 <div id="options" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
 
-            <!-- Initial state message -->
-            <div id="initial-message" class="text-center py-8">
-                <p class="text-emerald-200">Click the button below to start the quiz!</p>
+            <!-- Results Screen -->
+            <div id="results-screen" class="hidden">
+                 <div class="text-center">
+                    <h2 class="text-3xl font-bold text-white mb-2">Quiz Complete!</h2>
+                    <p id="score-text" class="text-xl mb-4 text-emerald-200"></p>
+                    <p id="difficulty-feedback" class="text-md mb-6 text-emerald-300"></p>
+                    <button id="requiz-btn" class="btn btn-primary text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105">Take Re-quiz</button>
+                </div>
             </div>
 
-             <!-- Error Message Display -->
-            <div id="error-message" class="hidden bg-red-800 border border-red-600 text-red-100 px-4 py-3 rounded-lg relative my-4" role="alert">
-                <strong class="font-bold">Error:</strong>
-                <span class="block sm:inline" id="error-text"></span>
-            </div>
-
-            <!-- Loader -->
+             <!-- Error & Loader -->
+            <div id="error-message" class="hidden bg-red-800 border-red-600 text-red-100 px-4 py-3 rounded-lg my-4"></div>
             <div id="loader" class="hidden text-center py-8">
-                <svg class="animate-spin h-8 w-8 text-emerald-300 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p class="mt-2 text-emerald-200">Generating your question...</p>
-            </div>
-
-            <!-- Action Button -->
-            <div class="mt-8 text-center">
-                <button id="action-button" class="action-button text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-transform">
-                    Get a Question
-                </button>
+                 <svg class="animate-spin h-8 w-8 text-emerald-300 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                 <p class="mt-2 text-emerald-200">Preparing your questions...</p>
             </div>
         </main>
     </div>
 
     <script>
-        const quizContent = document.getElementById('quiz-content');
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        
+        const startBtn = document.getElementById('start-btn');
+        const requizBtn = document.getElementById('requiz-btn');
+        
         const questionEl = document.getElementById('question');
         const optionsEl = document.getElementById('options');
-        const actionButton = document.getElementById('action-button');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        
+        const scoreText = document.getElementById('score-text');
+        const difficultyFeedback = document.getElementById('difficulty-feedback');
+        
         const loader = document.getElementById('loader');
         const errorMessageEl = document.getElementById('error-message');
-        const errorTextEl = document.getElementById('error-text');
-        const initialMessage = document.getElementById('initial-message');
-        const difficultySelect = document.getElementById('difficulty');
 
-        let correctAnswer = '';
+        const QUIZ_LENGTH = 5;
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentDifficulty = 'normal';
 
-        actionButton.addEventListener('click', fetchQuizQuestion);
+        startBtn.addEventListener('click', startQuiz);
+        requizBtn.addEventListener('click', startQuiz);
 
-        async function fetchQuizQuestion() {
-            const difficulty = difficultySelect.value;
-            
-            loader.classList.remove('hidden');
-            actionButton.disabled = true;
-            actionButton.textContent = 'Generating...';
-            quizContent.classList.add('hidden');
+        async function startQuiz() {
+            // Reset state
+            questions = [];
+            currentQuestionIndex = 0;
+            score = 0;
+
+            // Hide other screens, show loader
+            startScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
             errorMessageEl.classList.add('hidden');
-            initialMessage.classList.add('hidden');
-
-            // This is the secure part: we call our own serverless function, not Google's API directly.
-            const apiUrl = '/api/get-question';
+            loader.classList.remove('hidden');
 
             try {
-                // We send the difficulty level to our backend, so it can use it in the prompt.
-                const response = await fetch(apiUrl, {
+                const response = await fetch('/api/get-question', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ difficulty: difficulty })
+                    body: JSON.stringify({ difficulty: currentDifficulty })
                 });
 
-                // More robust error handling: check if the response is not OK
                 if (!response.ok) {
-                    let errorMsg = `Server Error: ${response.status}`;
-                    // Try to get a more specific error message from the response body
-                    const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.includes("application/json")) {
-                        const errorData = await response.json();
-                        errorMsg = errorData.error || JSON.stringify(errorData);
-                    } else {
-                        // If the response isn't JSON, it might be an HTML error page from the server
-                        errorMsg = await response.text();
-                    }
-                    throw new Error(errorMsg);
-                }
-
-                const result = await response.json();
-                
-                // The backend forwards the response from Gemini, so we extract the JSON part.
-                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!jsonText) {
-                    throw new Error("Invalid response structure from server. The 'text' field is missing.");
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Failed to fetch questions.');
                 }
                 
-                const data = JSON.parse(jsonText);
+                questions = await response.json();
 
-                if (!data.question || !data.options || !data.correctAnswer || data.options.length < 2) {
-                     throw new Error("Received malformed quiz data from server.");
+                if (!Array.isArray(questions) || questions.length !== QUIZ_LENGTH) {
+                    throw new Error('Received invalid question data from the server.');
                 }
-
-                displayQuestion(data);
+                
+                loader.classList.add('hidden');
+                quizScreen.classList.remove('hidden');
+                displayCurrentQuestion();
 
             } catch (error) {
-                console.error("Error fetching quiz question:", error);
-                // The error message will now be much more descriptive
-                showError(`Failed to generate question. Details: ${error.message}`);
-            } finally {
+                console.error("Error starting quiz:", error);
                 loader.classList.add('hidden');
-                actionButton.disabled = false;
-                actionButton.textContent = 'Get New Question';
+                errorMessageEl.textContent = `Error: ${error.message}`;
+                errorMessageEl.classList.remove('hidden');
+                startScreen.classList.remove('hidden'); // Show start screen again
             }
         }
 
-        function displayQuestion(data) {
-            correctAnswer = data.correctAnswer;
-            questionEl.textContent = data.question;
+        function displayCurrentQuestion() {
+            const questionData = questions[currentQuestionIndex];
+            questionEl.textContent = questionData.question;
             optionsEl.innerHTML = '';
-            data.options.forEach(optionText => {
+            
+            questionData.options.forEach(optionText => {
                 const button = document.createElement('button');
                 button.textContent = optionText;
-                button.classList.add('option-btn', 'w-full', 'text-left', 'p-4', 'rounded-lg', 'text-white');
-                button.addEventListener('click', selectAnswer);
+                button.classList.add('btn', 'btn-option', 'w-full', 'text-left', 'p-4', 'rounded-lg', 'text-white');
+                button.addEventListener('click', handleAnswer);
                 optionsEl.appendChild(button);
             });
-            quizContent.classList.remove('hidden');
+
+            updateProgress();
         }
 
-        function selectAnswer(e) {
+        function handleAnswer(e) {
             const selectedButton = e.target;
-            const isCorrect = selectedButton.textContent === correctAnswer;
+            const isCorrect = selectedButton.textContent === questions[currentQuestionIndex].correctAnswer;
 
-            const allOptions = Array.from(optionsEl.children);
+            if (isCorrect) {
+                score++;
+                selectedButton.classList.add('correct');
+            } else {
+                selectedButton.classList.add('incorrect');
+            }
 
-            allOptions.forEach(button => {
-                button.disabled = true; // Disable all buttons
-                if (button.textContent === correctAnswer) {
-                    button.classList.add('correct');
-                } else {
-                    button.classList.remove('hover:bg-emerald-600');
+            // Highlight the correct answer
+            Array.from(optionsEl.children).forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === questions[currentQuestionIndex].correctAnswer) {
+                    btn.classList.add('correct');
                 }
             });
 
-            if (!isCorrect) {
-                selectedButton.classList.add('incorrect');
-            }
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < QUIZ_LENGTH) {
+                    displayCurrentQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1500); // Wait 1.5 seconds before next question
+        }
+        
+        function updateProgress() {
+            const questionNumber = currentQuestionIndex + 1;
+            progressText.textContent = `Question ${questionNumber} / ${QUIZ_LENGTH}`;
+            progressBar.style.width = `${(questionNumber / QUIZ_LENGTH) * 100}%`;
         }
 
-        function showError(message) {
-            errorTextEl.textContent = message;
-            errorMessageEl.classList.remove('hidden');
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+
+            scoreText.textContent = `You scored ${score} out of ${QUIZ_LENGTH}!`;
+
+            if (score <= 2) {
+                currentDifficulty = 'easy';
+                difficultyFeedback.textContent = "Let's try something a bit easier next time.";
+            } else {
+                currentDifficulty = 'hard';
+                difficultyFeedback.textContent = "Great job! Let's ramp up the challenge.";
+            }
         }
     </script>
 
