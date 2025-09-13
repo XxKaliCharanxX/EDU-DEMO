@@ -1,0 +1,13 @@
+{
+    "name": "edu-demo-quiz",
+    "version": "1.0.0",
+    "description": "A secure quiz app with a Vercel serverless backend.",
+    "main": "index.html",
+    "type": "module",
+    "scripts": {
+      "start": "echo 'No start script defined, this is a static site with serverless functions.'"
+    },
+    "author": "",
+    "license": "ISC"
+  }
+  
