@@ -41,8 +41,8 @@
 
     <div class="w-full max-w-2xl mx-auto">
         <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-emerald-300">Adaptive Quiz</h1>
-            <p class="text-lg text-emerald-200 mt-2">The difficulty changes based on your score!</p>
+            <h1 class="text-4xl md:text-5xl font-bold text-emerald-300">Level-Based Adaptive Quiz</h1>
+            <p class="text-lg text-emerald-200 mt-2">Your level adjusts based on your score!</p>
         </header>
 
         <main id="quiz-container" class="quiz-card rounded-2xl shadow-2xl p-6 md:p-8">
@@ -60,7 +60,7 @@
                 <!-- Progress Bar -->
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-2">
-                         <span class="text-sm font-semibold text-emerald-200">Progress</span>
+                         <span id="level-text" class="text-sm font-semibold text-emerald-200">Level 3</span>
                          <span id="progress-text" class="text-sm font-semibold text-emerald-200">Question 1 / 5</span>
                     </div>
                     <div class="w-full bg-green-900 rounded-full h-2.5">
@@ -75,8 +75,8 @@
             <!-- Results Screen -->
             <div id="results-screen" class="hidden">
                  <div class="text-center">
-                    <h2 class="text-3xl font-bold text-white mb-2">Quiz Complete!</h2>
-                    <p id="score-text" class="text-xl mb-4 text-emerald-200"></p>
+                    <h2 class="text-3xl font-bold text-white mb-4">Quiz Complete!</h2>
+                    <div id="score-text" class="mb-4"></div>
                     <p id="difficulty-feedback" class="text-md mb-6 text-emerald-300"></p>
                     <button id="requiz-btn" class="btn btn-primary text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105">Take Re-quiz</button>
                 </div>
@@ -103,6 +103,7 @@
         const optionsEl = document.getElementById('options');
         const progressText = document.getElementById('progress-text');
         const progressBar = document.getElementById('progress-bar');
+        const levelText = document.getElementById('level-text');
         
         const scoreText = document.getElementById('score-text');
         const difficultyFeedback = document.getElementById('difficulty-feedback');
@@ -114,7 +115,7 @@
         let questions = [];
         let currentQuestionIndex = 0;
         let score = 0;
-        let currentDifficulty = 'normal';
+        let difficultyLevel = 3; // Start at level 3 (normal)
 
         startBtn.addEventListener('click', startQuiz);
         requizBtn.addEventListener('click', startQuiz);
@@ -131,11 +132,19 @@
             errorMessageEl.classList.add('hidden');
             loader.classList.remove('hidden');
 
+            // Map numerical level to difficulty string for the API
+            let difficultyString = 'normal';
+            if (difficultyLevel <= 2) {
+                difficultyString = 'easy';
+            } else if (difficultyLevel >= 4) {
+                difficultyString = 'hard';
+            }
+
             try {
                 const response = await fetch('/api/get-question', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ difficulty: currentDifficulty })
+                    body: JSON.stringify({ difficulty: difficultyString })
                 });
 
                 if (!response.ok) {
@@ -210,6 +219,7 @@
         function updateProgress() {
             const questionNumber = currentQuestionIndex + 1;
             progressText.textContent = `Question ${questionNumber} / ${QUIZ_LENGTH}`;
+            levelText.textContent = `Level ${difficultyLevel}`;
             progressBar.style.width = `${(questionNumber / QUIZ_LENGTH) * 100}%`;
         }
 
@@ -217,14 +227,17 @@
             quizScreen.classList.add('hidden');
             resultsScreen.classList.remove('hidden');
 
-            scoreText.textContent = `You scored ${score} out of ${QUIZ_LENGTH}!`;
-
-            if (score <= 2) {
-                currentDifficulty = 'easy';
-                difficultyFeedback.textContent = "Let's try something a bit easier next time.";
+            scoreText.innerHTML = `<span class="text-6xl font-bold text-white">${score}</span><span class="text-4xl text-emerald-300">/${QUIZ_LENGTH}</span>`;
+            
+            // Adjust difficulty for the next quiz
+            if (score <= 2 && difficultyLevel > 1) {
+                difficultyLevel--;
+                difficultyFeedback.textContent = `You're moving to level ${difficultyLevel}. Let's try something a bit easier.`;
+            } else if (score >= 4 && difficultyLevel < 5) {
+                difficultyLevel++;
+                difficultyFeedback.textContent = `Great job! You've advanced to level ${difficultyLevel}.`;
             } else {
-                currentDifficulty = 'hard';
-                difficultyFeedback.textContent = "Great job! Let's ramp up the challenge.";
+                difficultyFeedback.textContent = `You're staying on level ${difficultyLevel}. Keep it up!`;
             }
         }
     </script>
